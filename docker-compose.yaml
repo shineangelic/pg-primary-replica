@@ -11,7 +11,7 @@ x-postgres-common:
     retries: 5
 
 services:
-  postgres_primary:
+  pg_silcloud_primary:
     <<: *postgres-common
     ports:
       - 5432:5432
@@ -31,7 +31,7 @@ services:
     volumes:
       - ./00_init.sql:/docker-entrypoint-initdb.d/00_init.sql
 
-  postgres_replica:
+  pg_silcloud_replica:
     <<: *postgres-common
     ports:
       - 5433:5432
@@ -40,7 +40,7 @@ services:
       PGPASSWORD: replicator_password
     command: |
       bash -c "
-      until pg_basebackup --pgdata=/var/lib/postgresql/data -R --slot=replication_slot --host=postgres_primary --port=5432
+      until pg_basebackup --pgdata=/var/lib/postgresql/data -R --slot=replication_slot --host=pg_silcloud_primary --port=5432
       do
       echo 'Waiting for primary to connect...'
       sleep 1s
@@ -50,4 +50,18 @@ services:
       postgres
       "
     depends_on:
-      - postgres_primary
+      - pg_silcloud_primary
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4_container
+    depends_on:
+      - pg_silcloud_primary
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@tdi.it
+      PGADMIN_DEFAULT_PASSWORD: secret
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+volumes:
+  pgadmin-data:
